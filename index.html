@@ -1,0 +1,695 @@
+bash
+
+cat > /mnt/user-data/outputs/index.html << 'HTMLEOF'
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>성경 통독 트래커 ✝</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600&display=swap');
+
+  :root {
+    --bg: #F7F4EF;
+    --bg2: #EDE9E1;
+    --card: #FFFFFF;
+    --border: #DDD8CF;
+    --text: #1C1917;
+    --text2: #6B6560;
+    --text3: #9C9590;
+    --green: #1D6A4A;
+    --green2: #2D9C6E;
+    --green3: #E1F0E8;
+    --gold: #B5820A;
+    --gold2: #FBF3DF;
+    --red: #991B1B;
+    --red2: #FEE2E2;
+    --blue2: #EFF6FF;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+
+  /* 헤더 */
+  .header {
+    background: var(--green);
+    color: white;
+    padding: 20px 20px 16px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .header-title {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .header-sub {
+    font-size: 11px;
+    opacity: 0.75;
+    margin-top: 2px;
+    letter-spacing: 0.04em;
+  }
+
+  /* 탭 */
+  .tabs {
+    display: flex;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 68px;
+    z-index: 99;
+  }
+  .tab {
+    flex: 1;
+    padding: 12px 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+    text-align: center;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .tab.active { color: var(--green); border-bottom-color: var(--green); }
+
+  /* 콘텐츠 */
+  .content { padding: 16px; max-width: 600px; margin: 0 auto; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* 카드 */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+  }
+
+  /* 오늘 목표 박스 */
+  .goal-box {
+    background: var(--green3);
+    border: 1px solid #C5DFD0;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+  .goal-range {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--green);
+  }
+  .goal-sub { font-size: 12px; color: #3D7A5A; margin-top: 3px; }
+
+  /* 오늘 기록 박스 */
+  .today-rec {
+    background: var(--gold2);
+    border: 1px solid #E8D498;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .today-rec-text { font-size: 13px; font-weight: 500; color: var(--gold); }
+  .today-rec-sub { font-size: 11px; color: #9C7A20; margin-top: 2px; }
+
+  /* 입력 */
+  .input-group { margin-bottom: 10px; }
+  .input-label { font-size: 11px; color: var(--text2); margin-bottom: 4px; font-weight: 500; }
+  select, input[type="number"] {
+    width: 100%;
+    height: 42px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0 12px;
+    font-size: 15px;
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  select:focus, input:focus { border-color: var(--green2); }
+  .input-row { display: flex; gap: 8px; }
+  .input-row input { flex: 1; }
+  .input-row .ch-max { font-size: 12px; color: var(--text3); align-self: center; white-space: nowrap; }
+
+  /* 알림 */
+  .alert {
+    font-size: 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+  .alert-ok { background: var(--green3); color: var(--green); }
+  .alert-warn { background: var(--gold2); color: var(--gold); }
+  .alert-err { background: var(--red2); color: var(--red); }
+
+  /* 버튼 */
+  .btn-save {
+    width: 100%;
+    height: 44px;
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: background 0.2s;
+  }
+  .btn-save:hover, .btn-save:active { background: #155238; }
+  .btn-sm {
+    height: 30px;
+    padding: 0 12px;
+    font-size: 12px;
+    font-family: 'Noto Sans KR', sans-serif;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: white;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+  .btn-danger { border-color: #FCA5A5; color: var(--red); }
+  .btn-danger:hover { background: var(--red2); }
+
+  /* 지표 그리드 */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+  .metric {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 8px;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .metric-val { font-size: 18px; font-weight: 700; color: var(--text); line-height: 1.2; }
+  .metric-lbl { font-size: 10px; color: var(--text3); margin-top: 3px; }
+
+  /* 진행률 */
+  .progress-bar {
+    height: 8px;
+    background: var(--bg2);
+    border-radius: 99px;
+    overflow: hidden;
+    margin: 8px 0;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green2), var(--green));
+    border-radius: 99px;
+    transition: width 0.6s ease;
+  }
+
+  /* 일정 행 */
+  .day-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--bg2);
+    font-size: 13px;
+  }
+  .day-row:last-child { border-bottom: none; }
+  .day-label { font-size: 11px; color: var(--text3); min-width: 36px; }
+  .day-date { font-size: 11px; color: var(--text2); margin-left: 4px; }
+  .day-range { font-size: 13px; color: var(--text); text-align: right; }
+  .day-range.today { font-weight: 500; color: var(--green); }
+  .day-verses { font-size: 11px; color: var(--text3); text-align: right; margin-top: 1px; }
+
+  /* 히트맵 */
+  .heatmap {
+    display: grid;
+    grid-template-columns: repeat(26, 1fr);
+    gap: 2px;
+    margin: 8px 0;
+  }
+  .hm-cell {
+    aspect-ratio: 1;
+    border-radius: 2px;
+    background: var(--bg2);
+  }
+  .hm-done { background: #6DBF96; }
+  .hm-today { background: var(--green); }
+
+  /* 기록 행 */
+  .rec-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--bg2);
+  }
+  .rec-row:last-child { border-bottom: none; }
+  .rec-book { font-size: 14px; font-weight: 500; }
+  .rec-date { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .rec-v { font-size: 13px; font-weight: 600; color: var(--green); text-align: right; }
+  .month-hd {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 10px 0 6px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .empty { color: var(--text3); font-size: 13px; text-align: center; padding: 24px 0; }
+
+  /* 뱃지 */
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 99px;
+    font-weight: 600;
+    margin-left: 4px;
+  }
+  .badge-today { background: var(--green3); color: var(--green); }
+
+  /* 스크롤 */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">✝ 성경 통독 트래커</div>
+  <div class="header-sub">2026.04.29 ~ 2026.11.30 완독 목표</div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('home')">오늘 진도</button>
+  <button class="tab" onclick="switchTab('record')">읽기 기록</button>
+  <button class="tab" onclick="switchTab('schedule')">일정표</button>
+</div>
+
+<div class="content">
+
+  <!-- 탭1: 오늘 진도 -->
+  <div class="page active" id="page-home">
+    <div class="card">
+      <div class="card-title">오늘의 목표</div>
+      <div class="goal-box">
+        <div class="goal-range" id="todayTarget">계산 중...</div>
+        <div class="goal-sub" id="todayTargetSub"></div>
+      </div>
+      <div id="todayRecBox"></div>
+      <div class="input-group">
+        <div class="input-label">읽은 마지막 책</div>
+        <select id="selBook" onchange="onBookChange()">
+          <option value="">책 선택...</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <div class="input-label">읽은 마지막 장</div>
+        <div class="input-row">
+          <input type="number" id="inpChapter" min="1" placeholder="장 번호" oninput="onInputChange()">
+          <span class="ch-max" id="totalChLabel"></span>
+        </div>
+      </div>
+      <div id="inputAlert"></div>
+      <button class="btn-save" id="saveBtn" onclick="submitReading()">오늘 기록 저장</button>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="metric-val" id="mToday">—</div><div class="metric-lbl">오늘 목표</div></div>
+      <div class="metric"><div class="metric-val" id="mActual">—</div><div class="metric-lbl">오늘 읽음</div></div>
+      <div class="metric"><div class="metric-val" id="mRemain">—</div><div class="metric-lbl">남은 절수</div></div>
+      <div class="metric"><div class="metric-val" id="mDays">—</div><div class="metric-lbl">남은 일수</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">전체 진행률</div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2)">
+        <span id="progLabel">0%</span><span>목표 2026.11.30</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progFill" style="width:0%"></div></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px" id="progSub"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">내일부터 조정 일정 (14일)</div>
+      <div id="scheduleListHome"></div>
+    </div>
+  </div>
+
+  <!-- 탭2: 읽기 기록 -->
+  <div class="page" id="page-record">
+    <div class="metrics">
+      <div class="metric"><div class="metric-val" id="rDays">0</div><div class="metric-lbl">읽은 날</div></div>
+      <div class="metric"><div class="metric-val" id="rStreak">0</div><div class="metric-lbl">연속 읽기</div></div>
+      <div class="metric"><div class="metric-val" id="rTotal">0</div><div class="metric-lbl">총 절수</div></div>
+      <div class="metric"><div class="metric-val" id="rAvg">0</div><div class="metric-lbl">일평균</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">읽기 달력</div>
+      <div class="heatmap" id="heatmap"></div>
+      <div style="display:flex;gap:12px;font-size:10px;color:var(--text3);margin-top:6px;align-items:center">
+        <span>⬜ 미읽음</span>
+        <span style="color:#6DBF96">🟩 읽음</span>
+        <span style="color:var(--green)">🟩 오늘</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="card-title" style="margin:0">읽기 기록</div>
+        <button class="btn-sm btn-danger" onclick="confirmClear()">전체 초기화</button>
+      </div>
+      <div id="recordList"><div class="empty">아직 기록이 없습니다</div></div>
+    </div>
+  </div>
+
+  <!-- 탭3: 일정표 -->
+  <div class="page" id="page-schedule">
+    <div class="card">
+      <div class="card-title">남은 일정 전체 (오늘 기준 재계산)</div>
+      <div id="fullSchedule"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const BOOKS=[
+  ["레위기",7,[17,16,17,35,26,30,36,38,43,48,42,13,13,54,33,20,36,24,20,26,19,23,22,28,22,32,32,8,44,25,39,27,20,29,46,37]],
+  ["민수기",1,[54,34,46,46,55,48,45,46,39,53,53,35,50,51,38,34,42,46,36,43,40,29,47,56,40,28,37,27,47,33,38,36,28,29,29,38]],
+  ["신명기",1,[46,37,29,49,33,25,26,20,29,22,32,32,18,29,23,22,20,22,21,20,23,30,25,22,19,19,26,68,29,20,30,52,29,12]],
+  ["여호수아",1,[18,24,17,24,15,27,26,35,27,43,23,24,33,15,63,10,18,28,51,9,45,34,16,33]],
+  ["사사기",1,[36,23,31,24,31,40,25,35,57,18,40,15,25,20,20,31,13,31,30,48,25]],
+  ["룻기",1,[22,23,18,22]],
+  ["사무엘상",1,[28,36,21,22,12,21,17,22,27,27,15,25,23,52,35,23,58,30,24,42,15,23,29,22,44,25,12,25,11,31,13]],
+  ["사무엘하",1,[27,32,39,12,25,23,29,18,13,19,27,31,39,33,37,23,29,33,43,26,22,51,39,25]],
+  ["열왕기상",1,[53,46,28,34,18,38,51,66,28,29,43,33,34,31,34,34,24,46,21,43,29,53]],
+  ["열왕기하",1,[18,25,27,44,27,33,20,29,37,36,21,43,46,38,18,35,23,35,43,55,32,20,31,29,43,36,30,23,23,57,38,34,34,28,34,31,22,33,26]],
+  ["역대상",1,[54,55,24,43,26,81,40,40,44,14,47,40,14,17,29,43,27,17,19,8,30,19,32,31,31,32,34,21,30]],
+  ["역대하",1,[17,18,17,22,14,42,22,18,31,19,23,16,22,15,19,14,19,34,11,37,20,12,21,27,28,23,9,27,36,27,21,33,25,33,27,23]],
+  ["에스라",1,[11,70,13,24,17,22,28,36,15,44]],
+  ["느헤미야",1,[11,20,32,23,19,19,73,18,38,39,36,47,31]],
+  ["에스더",1,[22,23,15,17,14,14,10,17,32,3]],
+  ["욥기",1,[22,17,16,21,26,18,20,17,19,24,20,23,22,21,20,21,20,21,20,21,22,21,20,21,20,21,20,21,20,21,20,21,20,21,20,21,20,21,20,21,20,33]],
+  ["시편",1,[6,12,8,8,12,10,17,9,20,18,7,8,6,7,5,11,15,50,14,9,13,31,6,10,22,12,14,9,11,12,24,11,22,22,28,12,40,22,13,17,43,11,5,20,28,22,35,22,20,28,22,35,22,20,28,22,35,22,20,28,22,35,22,20,28,22,35,22,20,28,22,35,22,20,28,22,35,22,20,28,22,35,22,20,28,22,35,22,20,28,22,35,22,20,28,22,35,22,20,28,22,35,22,20,28,22,35,22,20,28,22,35,22,20,28,22,35,22,20,28,22,35,22,20,28,22,35,22,20,28,22,35,22,20,28,22,35,22,20,28,22,35,22,20,28,22,35,22,20,176]],
+  ["잠언",1,[33,22,35,27,23,35,27,36,18,32,31,28,25,35,33,33,28,24,29,30,31,29,35,34,28,28,27,28,62,44,58]],
+  ["전도서",1,[18,26,22,16,20,12,29,17,18,20,10,14]],
+  ["아가",1,[17,17,11,16,16,13,13,14]],
+  ["이사야",1,[31,22,26,6,30,13,25,22,21,34,16,6,22,32,9,14,14,7,25,6,17,25,18,23,12,21,13,29,24,33,9,20,24,17,10,22,38,22,8,31,29,25,28,28,25,13,15,22,26,11,23,15,12,17,13,12,21,14,21,22,11,12,19,12,25,24]],
+  ["예레미야",1,[19,37,25,31,31,30,34,22,26,25,23,17,27,22,21,21,27,23,15,18,14,30,40,10,38,24,22,17,32,24,40,44,26,22,19,32,21,28,18,16,18,22,13,30,5,28,7,47,39,46,64,34]],
+  ["예레미야애가",1,[22,22,66,22,22]],
+  ["에스겔",1,[28,10,27,21,17,17,14,20,28,22,35,46,33,33,63,22,28,36,23,28,23,49,13,20,68,20,31,40,25,45,29,29,12,28,28,27,15,18,31,40,42,16,37,16,43,48,48,14]],
+  ["다니엘",1,[21,49,30,37,31,28,28,27,27,21,45,13]],
+  ["호세아",1,[11,23,5,19,15,11,16,14,17,15,12,14,16,9]],
+  ["요엘",1,[20,32,21]],["아모스",1,[15,16,15,13,27,14,17,14,15]],
+  ["오바댜",1,[21]],["요나",1,[17,10,10,11]],["미가",1,[16,13,12,13,15,16,20]],
+  ["나훔",1,[15,13,19]],["하박국",1,[17,20,19]],["스바냐",1,[18,15,20]],
+  ["학개",1,[15,23]],["스가랴",1,[21,13,10,14,11,15,14,23,17,12,17,14,9,21]],
+  ["말라기",1,[14,17,18,6]],
+  ["마태복음",1,[25,23,17,25,48,34,29,34,38,42,45,27,31,32,29,23,31,25,21,23,22,33,27,35,27,20,25,28]],
+  ["마가복음",1,[45,28,35,41,43,56,37,38,50,52,33,44,37,72,47,20]],
+  ["누가복음",1,[80,52,38,44,39,49,50,56,62,42,54,59,35,35,32,31,37,43,48,47,38,71,56,53]],
+  ["요한복음",1,[51,25,36,54,47,71,53,59,41,42,57,50,38,31,27,33,26,40,42,31,25]],
+  ["사도행전",1,[26,47,26,37,20,32,22,38,47,44,31,40,31,32,44,32,40,35,26,26,28,39,31,32,36,41,40,38,22,35,25,29,36,35]],
+  ["로마서",1,[32,29,31,25,21,23,25,39,33,21,36,21,14,26,33,24]],
+  ["고린도전서",1,[31,16,23,21,13,20,40,13,27,33,34,31,13,40,58,24]],
+  ["고린도후서",1,[24,17,18,18,21,18,16,24,15,18,33,21,14]],
+  ["갈라디아서",1,[24,21,29,31,26,18]],["에베소서",1,[23,22,21,28,20,12]],
+  ["빌립보서",1,[30,18,19,16]],["골로새서",1,[24,13,15,25]],
+  ["데살로니가전서",1,[10,20,13,18,28]],["데살로니가후서",1,[12,17,18]],
+  ["디모데전서",1,[20,15,16,16,25,21]],["디모데후서",1,[18,26,17,22]],
+  ["디도서",1,[16,15,15]],["빌레몬서",1,[25]],
+  ["히브리서",1,[14,18,19,16,14,20,28,13,28,39,40,29,25]],
+  ["야고보서",1,[27,26,18,17,20]],["베드로전서",1,[25,25,22,19,14]],
+  ["베드로후서",1,[21,22,18]],["요한일서",1,[10,29,24,21,21]],
+  ["요한이서",1,[13]],["요한삼서",1,[14]],["유다서",1,[25]],
+  ["요한계시록",1,[20,29,36,13,14,25,52,11,28,17,27,24,21,33,20,24,44,23,25,22,17,37]],
+];
+
+const ALL_CHS=[];
+for(const [bn,sc,chs] of BOOKS) chs.forEach((v,i)=>{ if(i+1>=sc) ALL_CHS.push({b:bn,c:i+1,v}); });
+const TOTAL_V=ALL_CHS.reduce((s,x)=>s+x.v,0);
+const CUM_MAP={}; let _c=0;
+for(const {b,c,v} of ALL_CHS){ _c+=v; CUM_MAP[`${b}_${c}`]=_c; }
+
+const END=new Date(2026,10,30);
+const START=new Date(2026,3,29);
+function toKey(d){ return d.toISOString().slice(0,10); }
+function today(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
+function addDays(d,n){ const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+function diffDays(a,b){ return Math.round((b-a)/86400000); }
+function fmtDate(d){ return `${d.getMonth()+1}/${String(d.getDate()).padStart(2,'0')}`; }
+function fmtKo(d){ const w=['일','월','화','수','목','금','토']; return `${fmtDate(d)}(${w[d.getDay()]})`; }
+
+const SK='bible_tracker_v4';
+function load(){ try{ return JSON.parse(localStorage.getItem(SK)||'{}'); }catch(e){ return{}; } }
+function save(d){ try{ localStorage.setItem(SK,JSON.stringify(d)); }catch(e){} }
+let state=load();
+if(!state.records) state.records={};
+
+function getLastCum(){ const e=Object.entries(state.records).sort((a,b)=>a[0].localeCompare(b[0])); return e.length?e[e.length-1][1].cumVerse:0; }
+function getPrevCum(){ const tk=toKey(today()); const e=Object.entries(state.records).filter(([k])=>k<tk).sort((a,b)=>a[0].localeCompare(b[0])); return e.length?e[e.length-1][1].cumVerse:0; }
+
+const sel=document.getElementById('selBook');
+for(const [bn] of BOOKS){ const o=document.createElement('option'); o.value=bn; o.textContent=bn; sel.appendChild(o); }
+
+function switchTab(id){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['home','record','schedule'][i]===id));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(id==='record') renderRecord();
+  if(id==='schedule') renderFullSchedule();
+}
+
+function onBookChange(){
+  const bn=sel.value; const book=BOOKS.find(b=>b[0]===bn);
+  document.getElementById('totalChLabel').textContent=book?`/ ${book[2].length}장`:'';
+  if(book) document.getElementById('inpChapter').max=book[2].length;
+  onInputChange();
+}
+
+function onInputChange(){
+  const bn=sel.value; const ch=parseInt(document.getElementById('inpChapter').value);
+  const el=document.getElementById('inputAlert'); el.innerHTML='';
+  if(!bn||!ch) return;
+  const book=BOOKS.find(b=>b[0]===bn); if(!book) return;
+  if(ch<1||ch>book[2].length){ el.innerHTML=`<div class="alert alert-warn">${bn}은 1~${book[2].length}장까지입니다</div>`; return; }
+  const cumV=CUM_MAP[`${bn}_${ch}`]||0;
+  const prev=getPrevCum();
+  const todayV=cumV-prev;
+  if(todayV<=0){ el.innerHTML=`<div class="alert alert-warn">이미 읽은 범위입니다. 더 앞 장을 입력해주세요</div>`; return; }
+  const tgt=calcTodayTarget();
+  const diff=todayV-tgt; const sign=diff>=0?'+':'';
+  const isUpdate=!!state.records[toKey(today())];
+  el.innerHTML=`<div class="alert ${diff>=0?'alert-ok':'alert-warn'}">오늘 읽은 절수: ${todayV}절 (목표 대비 ${sign}${diff}절)${isUpdate?'<br><span style="font-size:11px;opacity:0.8">기존 기록을 덮어씁니다</span>':''}</div>`;
+}
+
+function calcTodayTarget(){
+  const rem=TOTAL_V-getLastCum();
+  return Math.ceil(rem/Math.max(1,diffDays(today(),END)+1));
+}
+
+function submitReading(){
+  const bn=sel.value; const ch=parseInt(document.getElementById('inpChapter').value);
+  if(!bn||!ch) return;
+  const book=BOOKS.find(b=>b[0]===bn); if(!book||ch<1||ch>book[2].length) return;
+  const cumV=CUM_MAP[`${bn}_${ch}`]||0;
+  if(cumV<=getPrevCum()) return;
+  state.records[toKey(today())]={book:bn,chapter:ch,cumVerse:cumV};
+  save(state);
+  sel.value=''; document.getElementById('inpChapter').value='';
+  document.getElementById('inputAlert').innerHTML='';
+  document.getElementById('totalChLabel').textContent='';
+  render();
+}
+
+function calcSchedule(n=14){
+  const cum=getLastCum(); const rem=TOTAL_V-cum;
+  if(rem<=0) return [];
+  const t=today(); const dl=diffDays(t,END)+1; const ppd=rem/dl;
+  const remChs=ALL_CHS.filter(({b,c})=>(CUM_MAP[`${b}_${c}`]||0)>cum);
+  const res=[]; let idx=0; let cd=0;
+  for(let di=0;di<Math.min(dl,n);di++){
+    const d=addDays(t,di); const tgt=ppd*(di+1); const dc=[];
+    while(idx<remChs.length){ const {b,c,v}=remChs[idx]; dc.push({b,c,v}); cd+=v; idx++; if(cd>=tgt-3) break; }
+    if(dc.length){ const fb=dc[0],lb=dc[dc.length-1]; res.push({date:d,start:`${fb.b} ${fb.c}장`,end:`${lb.b} ${lb.c}장`,verses:dc.reduce((s,x)=>s+x.v,0),isToday:di===0}); }
+  }
+  return res;
+}
+
+function render(){
+  const cum=getLastCum(); const t=today(); const tk=toKey(t);
+  const rem=TOTAL_V-cum; const dl=Math.max(0,diffDays(t,END));
+  const pct=Math.round((cum/TOTAL_V)*100);
+  const tgt=calcTodayTarget(); const sched=calcSchedule();
+  const todaySched=sched.find(s=>s.isToday);
+  const todayRec=state.records[tk];
+
+  document.getElementById('todayTarget').textContent=todaySched?`${todaySched.start} ~ ${todaySched.end}`:'🏁 완독!';
+  document.getElementById('todayTargetSub').textContent=todaySched?`목표 ${todaySched.verses}절 | ${fmtKo(t)}`:'모든 통독을 마쳤습니다';
+
+  const recBox=document.getElementById('todayRecBox');
+  if(todayRec){
+    const prev=getPrevCum(); const tv=todayRec.cumVerse-prev;
+    recBox.innerHTML=`<div class="today-rec"><div><div class="today-rec-text">${todayRec.book} ${todayRec.chapter}장까지 ✓</div><div class="today-rec-sub">오늘 ${tv}절 완료 · 수정하려면 아래 다시 입력</div></div><button class="btn-sm btn-danger" onclick="deleteTodayRecord()">취소</button></div>`;
+    document.getElementById('saveBtn').textContent='오늘 기록 수정';
+  } else {
+    recBox.innerHTML='';
+    document.getElementById('saveBtn').textContent='오늘 기록 저장';
+  }
+
+  const tv=todayRec?(todayRec.cumVerse-getPrevCum()):0;
+  document.getElementById('mToday').textContent=tgt+'절';
+  document.getElementById('mActual').textContent=tv?tv+'절':'—';
+  document.getElementById('mRemain').textContent=rem>=10000?Math.round(rem/1000)+'K':rem.toLocaleString();
+  document.getElementById('mDays').textContent=dl+'일';
+  document.getElementById('progLabel').textContent=pct+'%';
+  document.getElementById('progFill').style.width=pct+'%';
+  document.getElementById('progSub').textContent=`${cum.toLocaleString()}절 / ${TOTAL_V.toLocaleString()}절 · 하루 ${Math.ceil(rem/Math.max(1,dl))}절 필요`;
+
+  document.getElementById('scheduleListHome').innerHTML=sched.map(({date,start,end,verses,isToday},i)=>`
+    <div class="day-row">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="day-label">${isToday?'오늘':i===1?'내일':fmtDate(date)}</span>
+        <span class="day-date">${fmtKo(date)}</span>
+      </div>
+      <div>
+        <div class="day-range ${isToday?'today':''}">${start} ~ ${end}</div>
+        <div class="day-verses">${verses}절</div>
+      </div>
+    </div>`).join('')||'<div class="empty">🏁 완독!</div>';
+}
+
+function deleteTodayRecord(){ delete state.records[toKey(today())]; save(state); render(); }
+
+function renderRecord(){
+  const keys=Object.keys(state.records).sort();
+  const readSet=new Set(keys);
+  const dayV={}; let prev=0;
+  for(const k of keys){ const r=state.records[k]; dayV[k]=r.cumVerse-prev; prev=r.cumVerse; }
+  const totalDays=keys.length;
+  const totalV=Object.values(dayV).reduce((s,v)=>s+v,0);
+  const avgV=totalDays?Math.round(totalV/totalDays):0;
+  let streak=0; let d=today();
+  while(readSet.has(toKey(d))){ streak++; d=addDays(d,-1); }
+  document.getElementById('rDays').textContent=totalDays+'일';
+  document.getElementById('rStreak').textContent=streak+'일';
+  document.getElementById('rTotal').textContent=totalV>=10000?Math.round(totalV/100)/10+'K':totalV;
+  document.getElementById('rAvg').textContent=avgV+'절';
+
+  const hm=document.getElementById('heatmap'); hm.innerHTML='';
+  const t=today(); const total=diffDays(START,t)+1;
+  for(let i=0;i<Math.min(total,182);i++){
+    const dd=addDays(START,i); const k=toKey(dd);
+    const isT=k===toKey(t); const done=readSet.has(k);
+    const cell=document.createElement('div');
+    cell.className='hm-cell'+(isT?' hm-today':done?' hm-done':'');
+    cell.title=`${fmtDate(dd)}${done?` (+${dayV[k]}절)`:''}`;
+    hm.appendChild(cell);
+  }
+
+  const listEl=document.getElementById('recordList');
+  if(!keys.length){ listEl.innerHTML='<div class="empty">아직 기록이 없습니다</div>'; return; }
+  const byM={};
+  for(const k of [...keys].reverse()){
+    const m=k.slice(0,7); if(!byM[m]) byM[m]=[]; byM[m].push(k);
+  }
+  let html='';
+  for(const [mon,ks] of Object.entries(byM).sort((a,b)=>b[0].localeCompare(a[0]))){
+    const [y,m]=mon.split('-');
+    const mv=ks.reduce((s,k)=>s+(dayV[k]||0),0);
+    html+=`<div class="month-hd"><span>${y}년 ${parseInt(m)}월</span><span>${ks.length}일 · ${mv.toLocaleString()}절</span></div>`;
+    for(const k of ks){
+      const rec=state.records[k]; const dd=new Date(k+'T00:00:00');
+      const wd=['일','월','화','수','목','금','토'][dd.getDay()];
+      const isT=k===toKey(today());
+      html+=`<div class="rec-row">
+        <div><div class="rec-book">${rec.book} ${rec.chapter}장까지${isT?'<span class="badge badge-today">오늘</span>':''}</div><div class="rec-date">${fmtDate(dd)}(${wd})</div></div>
+        <div style="text-align:right"><div class="rec-v">+${(dayV[k]||0).toLocaleString()}절</div><button class="btn-sm btn-danger" style="margin-top:4px" onclick="deleteRecord('${k}')">삭제</button></div>
+      </div>`;
+    }
+  }
+  listEl.innerHTML=html;
+}
+
+function deleteRecord(k){
+  if(!confirm(`${k} 기록을 삭제하시겠습니까?`)) return;
+  delete state.records[k]; save(state); render(); renderRecord();
+}
+function confirmClear(){
+  if(!confirm('모든 기록을 초기화하시겠습니까?\n되돌릴 수 없습니다.')) return;
+  state={records:{}}; save(state); render(); renderRecord();
+}
+
+function renderFullSchedule(){
+  const sched=calcSchedule(216);
+  const el=document.getElementById('fullSchedule');
+  if(!sched.length){ el.innerHTML='<div class="empty">🏁 완독!</div>'; return; }
+  const byM={};
+  for(const s of sched){
+    const k=`${s.date.getFullYear()}-${s.date.getMonth()}`;
+    if(!byM[k]) byM[k]={label:`${s.date.getFullYear()}년 ${s.date.getMonth()+1}월`,items:[]};
+    byM[k].items.push(s);
+  }
+  el.innerHTML=Object.values(byM).map(({label,items})=>`
+    <div class="month-hd" style="margin-top:8px"><span>${label}</span><span>${items.length}일</span></div>
+    ${items.map(({date,start,end,verses,isToday})=>`
+      <div class="day-row">
+        <div style="display:flex;align-items:center;gap:6px">
+          ${isToday?'<span class="badge badge-today">오늘</span>':''}
+          <span class="day-date">${fmtKo(date)}</span>
+        </div>
+        <div><div class="day-range ${isToday?'today':''}">${start} ~ ${end}</div><div class="day-verses">${verses}절</div></div>
+      </div>`).join('')}`).join('');
+}
+
+render();
+</script>
+</body>
+</html>
+HTMLEOF
+echo "완료"
+출력
+
+완료
